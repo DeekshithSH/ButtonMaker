@@ -1,4 +1,3 @@
-from pprint import pprint
 from pyrogram import filters, Client
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from Bot import TGBot
@@ -11,6 +10,7 @@ I am Button Maker Bot I can help you to create Button with URL
 Join Our Channel @SpringsFern for News about our bot
 Join Our Discussion Group @AWeirdString to ask commnon doubts you have or report any issue your facing
                              
+You can crete buttons using two way using /control or /create command
 send /help for more help
 """)
 

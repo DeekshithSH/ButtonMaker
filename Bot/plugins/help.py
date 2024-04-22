@@ -36,7 +36,11 @@ It will remove extra buttons Like Add Row and Add Column
 @TGBot.on_message(filters.private & filters.command("help"))
 async def help_handler(bot: Client, message: Message):
     await message.reply_text(
-"""Here is How to use this bot
+"""<u>/control command</u>
+It is a easy to use mode with Buttons to do everything
+
+<u>/create command</u>
+Here is How to use this bot with /create command
 step 1: Send a Text or File here
 step 2: Reply to the message you sent with /create
 step 3: Add Button by pressing on Add Column Button, You can add more rows by clicking on Add Row Button
