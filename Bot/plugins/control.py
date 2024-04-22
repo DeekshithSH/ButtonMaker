@@ -37,9 +37,12 @@ async def ctrl_up_handler(bot: Client, update: CallbackQuery):
     row_no, col_no=[int(x) for x in update.message.reply_markup.inline_keyboard[1][1].callback_data.split("_")]
     if row_no<1:
         return await update.answer(text="already selected top most button")
+
+    if len(markup.inline_keyboard[row_no-1])<=col_no:
+        col_no=len(markup.inline_keyboard[row_no-1])-1
     update.message.reply_markup.inline_keyboard[1][1].callback_data=f"{row_no-1}_{col_no}"
     update.message.reply_markup.inline_keyboard[1][1].text=markup.inline_keyboard[row_no-1][col_no].text
-    await update.edit_message_text("Todo",
+    await update.edit_message_text(gen_pos_text(row_no-1, col_no, len(markup.inline_keyboard)),
         reply_markup=InlineKeyboardMarkup(update.message.reply_markup.inline_keyboard))
 
 @TGBot.on_callback_query(filters.regex(pattern="ctrl_left"))
@@ -52,7 +55,7 @@ async def ctrl_left_handler(bot: Client, update: CallbackQuery):
         return await update.answer(text="already selected left most button")
     update.message.reply_markup.inline_keyboard[1][1].callback_data=f"{row_no}_{col_no-1}"
     update.message.reply_markup.inline_keyboard[1][1].text=markup.inline_keyboard[row_no][col_no-1].text
-    await update.edit_message_text("ToDO",
+    await update.edit_message_text(gen_pos_text(row_no, col_no-1, len(markup.inline_keyboard)),
         reply_markup=InlineKeyboardMarkup(update.message.reply_markup.inline_keyboard))
 
 @TGBot.on_callback_query(filters.regex(pattern="ctrl_right"))
@@ -67,7 +70,7 @@ async def ctrl_right_handler(bot: Client, update: CallbackQuery):
         return await update.answer(text="already selected right most button")
     update.message.reply_markup.inline_keyboard[1][1].callback_data=f"{row_no}_{col_no+1}"
     update.message.reply_markup.inline_keyboard[1][1].text=markup.inline_keyboard[row_no][col_no+1].text
-    await update.edit_message_text("ToDO",
+    await update.edit_message_text(gen_pos_text(row_no, col_no+1, len(markup.inline_keyboard)),
         reply_markup=InlineKeyboardMarkup(update.message.reply_markup.inline_keyboard))
 
 @TGBot.on_callback_query(filters.regex(pattern="ctrl_down"))
@@ -80,9 +83,11 @@ async def ctrl_down_handler(bot: Client, update: CallbackQuery):
 
     if row_no>=len(markup.inline_keyboard)-1:
         return await update.answer(text="already selected bottom most button")
+    if len(markup.inline_keyboard[row_no+1])<=col_no:
+        col_no=len(markup.inline_keyboard[row_no+1])-1
     update.message.reply_markup.inline_keyboard[1][1].callback_data=f"{row_no+1}_{col_no}"
     update.message.reply_markup.inline_keyboard[1][1].text=markup.inline_keyboard[row_no+1][col_no].text
-    await update.edit_message_text("ToDo",
+    await update.edit_message_text(gen_pos_text(row_no+1, col_no, len(markup.inline_keyboard)),
         reply_markup=InlineKeyboardMarkup(update.message.reply_markup.inline_keyboard))
 
 @TGBot.on_callback_query(filters.regex(pattern="ctrl_add_left"))
@@ -146,11 +151,11 @@ async def ctrl_add_above_handler(bot: Client, update: CallbackQuery):
         if len(buttons)>99:
             return await update.answer("Can't add more than 100 buttons rows")
         btn_name, btn_url=await ask_button_data(update.message)
-        buttons.insert([row_no, InlineKeyboardButton(btn_name, url=btn_url)])
+        buttons.insert(row_no, [InlineKeyboardButton(btn_name, url=btn_url)])
         await reply_msg.edit_reply_markup(InlineKeyboardMarkup(buttons))
         update.message.reply_markup.inline_keyboard[1][1].text=buttons[row_no][col_no].text
         await update.edit_message_reply_markup(InlineKeyboardMarkup(update.message.reply_markup.inline_keyboard))
-        
+
     except ListenerTimeout:
         return await update.message.reply('You took too long to answer.')
     except ButtonUrlInvalid:
@@ -170,7 +175,7 @@ async def ctrl_add_below_handler(bot: Client, update: CallbackQuery):
         if len(buttons)>99:
             return await update.answer("Can't add more than 100 buttons rows")
         btn_name, btn_url=await ask_button_data(update.message)
-        buttons.insert([row_no+1, InlineKeyboardButton(btn_name, url=btn_url)])
+        buttons.insert(row_no+1,[InlineKeyboardButton(btn_name, url=btn_url)])
         await reply_msg.edit_reply_markup(InlineKeyboardMarkup(buttons))
         
     except ListenerTimeout:
@@ -253,6 +258,10 @@ async def ctrl_edit_message_handler(bot: Client, update: CallbackQuery):
 async def ctrl_save_handler(bot: Client, update: CallbackQuery):
     await update.answer("Inline Mode Not Implimented yet\nYou can use this button after Inline mode support is added")
 
+@TGBot.on_callback_query(filters.regex(pattern="\d+_\d+"))
+async def info_message_handler(bot: Client, update: CallbackQuery):
+    print(update.message.reply_markup.inline_keyboard[1][1])
+
 async def ask_button_data(message: Message) -> Union[str, str]:
     msg1=(await message.reply_text("Send the name that will appear on the button\nWait Time: 2 minute")).id
     btn_name = await message.chat.listen(filters=filters.text, timeout=120)
@@ -260,3 +269,12 @@ async def ask_button_data(message: Message) -> Union[str, str]:
     btn_url = await message.chat.listen(filters=filters.text, timeout=120)
     await message._client.delete_messages(message.from_user.id, [msg1, btn_name.id, msg2, btn_url.id])
     return btn_name.text, btn_url.text
+
+def gen_pos_text(row: int, col: int, row_len: int):
+    interface = []
+    for i in range(row_len):
+        row_text = ["🟦"] * 8
+        if row==i:
+            row_text[col]="🟥"
+        interface.append(" ".join(row_text))
+    return "\n".join(interface)
