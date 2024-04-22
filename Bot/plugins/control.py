@@ -22,8 +22,8 @@ async def control_handler(bot: Client, message: Message):
             [InlineKeyboardButton("←", "ctrl_left"), InlineKeyboardButton("Button Name", "0_0"), InlineKeyboardButton("→", "ctrl_right")],
             [InlineKeyboardButton("↓", "ctrl_down")],
             [InlineKeyboardButton("Add Button Left", "ctrl_add_left"), InlineKeyboardButton("Add Button Right", "ctrl_add_right")],
-            [InlineKeyboardButton("Add Button Above", "ctrl_add_above"), InlineKeyboardButton("Add Buttob Below", "ctrl_add_below")],
-            [InlineKeyboardButton("Edit Button Text", "ctrl_edit_text"), InlineKeyboardButton("Edit Button URL", "ctrl_edit_url")],
+            [InlineKeyboardButton("Add Button Above", "ctrl_add_above"), InlineKeyboardButton("Add Button Below", "ctrl_add_below")],
+            [InlineKeyboardButton("Edit Button Text", "ctrl_edit_text"), InlineKeyboardButton("Remove Button", "ctrl_delete"), InlineKeyboardButton("Edit Button URL", "ctrl_edit_url")],
             [InlineKeyboardButton("Edit Message Text", "ctrl_edit_message"), InlineKeyboardButton("save", "ctrl_save")]
         ]))
 
@@ -247,9 +247,9 @@ async def ctrl_edit_message_handler(bot: Client, update: CallbackQuery):
         parser=ParseMode.DEFAULT
     try:
         if reply_msg.text:
-            await reply_msg.edit_text(text.text, parse_mode=parser)
+            await reply_msg.edit_text(text.text, parse_mode=parser, reply_markup=reply_msg.reply_markup)
         elif reply_msg.caption:
-            await reply_msg.edit_caption(text.text)
+            await reply_msg.edit_caption(text.text, reply_markup=reply_msg.reply_markup)
     except MessageNotModified:
         pass
     await bot.delete_messages(update.message.chat.id, [msg.id, text.id, msg2.id, parse_msg.id])
@@ -257,6 +257,26 @@ async def ctrl_edit_message_handler(bot: Client, update: CallbackQuery):
 @TGBot.on_callback_query(filters.regex(pattern="ctrl_save"))
 async def ctrl_save_handler(bot: Client, update: CallbackQuery):
     await update.answer("Inline Mode Not Implimented yet\nYou can use this button after Inline mode support is added")
+
+@TGBot.on_callback_query(filters.regex(pattern="ctrl_delete"))
+async def ctrl_delete_handler(bot: Client, update: CallbackQuery):
+    markup=(await bot.get_messages(update.message.chat.id, update.message.reply_to_message_id)).reply_markup
+    if not markup:
+        return await update.answer(text="Add a button by clicking on any 'Add Button' Button", show_alert=True)
+
+    row_no, col_no=[int(x) for x in update.message.reply_markup.inline_keyboard[1][1].callback_data.split("_")]
+    markup.inline_keyboard[row_no].pop(col_no)
+    if not markup.inline_keyboard[row_no]:
+        markup.inline_keyboard.pop()
+        10 <= 5
+        if len(markup.inline_keyboard)<=row_no:
+            row_no=len(markup.inline_keyboard)-1
+    if len(markup.inline_keyboard[row_no])<=col_no:
+        col_no=len(markup.inline_keyboard)-1
+    update.message.reply_markup.inline_keyboard[1][1].callback_data=f"{row_no-1}_{col_no}"
+    update.message.reply_markup.inline_keyboard[1][1].text=markup.inline_keyboard[row_no-1][col_no].text
+    await update.edit_message_text(gen_pos_text(row_no-1, col_no, len(markup.inline_keyboard)),
+        reply_markup=InlineKeyboardMarkup(update.message.reply_markup.inline_keyboard))
 
 @TGBot.on_callback_query(filters.regex(pattern="\d+_\d+"))
 async def info_message_handler(bot: Client, update: CallbackQuery):
