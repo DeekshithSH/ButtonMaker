@@ -16,10 +16,10 @@ column: Count Buttons from left to Button you want to remove in same line the nu
 
 example: `/rmbtn 2 5`""")
 
-@TGBot.on_message(filters.private & filters.command("create"))
+@TGBot.on_message(filters.private & filters.command("create2"))
 async def create_help_handler(bot: Client, message: Message):
     await message.reply_text(
-"""`usage: /create`
+"""`usage: /create2`
 
 Reply to text or media message to create buttons""")
 
@@ -29,20 +29,20 @@ async def done_help_handler(bot: Client, message: Message):
     await message.reply_text(
 """`usage: /done`
 
-Reply to Button you created using /create command
+Reply to Button you created using /create2 command
 It will remove extra buttons Like Add Row and Add Column
 """)
 
 @TGBot.on_message(filters.private & filters.command("help"))
 async def help_handler(bot: Client, message: Message):
     await message.reply_text(
-"""<u>/control command</u>
+"""<u>/create command</u>
 It is a easy to use mode with Buttons to do everything
 
-<u>/create command</u>
-Here is How to use this bot with /create command
+<u>/create2 command</u>
+Here is How to use this bot with /create2 command
 step 1: Send a Text or File here
-step 2: Reply to the message you sent with /create
+step 2: Reply to the message you sent with /create2
 step 3: Add Button by pressing on Add Column Button, You can add more rows by clicking on Add Row Button
 step 4: After you complete creating buttons reply to message containg your buttons with /done command
 step 5: Done you will receive message from bot will buttons you created

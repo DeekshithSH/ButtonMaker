@@ -7,4 +7,5 @@ class Var:
     API_HASH: str=environ.get("API_HASH")
     BOT_TOKEN: str=environ.get("BOT_TOKEN")
     WORKER: int=int(environ.get("WORKER", 4))
-    
+    DATABASE_URL: str=environ.get("DATABASE_URL")
+    BIN_CHANNEL: int=int(environ.get("BIN_CHANNEL"))

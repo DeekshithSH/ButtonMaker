@@ -10,12 +10,12 @@ I am Button Maker Bot I can help you to create Button with URL
 Join Our Channel @SpringsFern for News about our bot
 Join Our Discussion Group @AWeirdString to ask commnon doubts you have or report any issue your facing
                              
-You can crete buttons using two way using /control or /create command
+You can crete buttons using two way using /create or /create2 command
 send /help for more help
 """)
 
 
-@TGBot.on_message(filters.private & filters.command("create"))
+@TGBot.on_message(filters.private & filters.command("create2"))
 async def create_handler(bot: Client, message: Message):
     if not message.reply_to_message:
         return await message.reply_text("Please Reply to a Message or Media")

@@ -3,16 +3,29 @@ from pyrogram import filters, Client
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton
 from pyrogram.errors import ButtonUrlInvalid, MessageNotModified
 from pyrogram.enums import ParseMode
+from pyrogram.enums.message_media_type import MessageMediaType
 from pyromod import Message
 from pyromod.exceptions import ListenerTimeout
 from Bot import TGBot
+from Bot.utils import database as db
+from Bot.vars import Var
 
-@TGBot.on_message(filters.private & filters.command("control"))
+supported_media=[MessageMediaType.ANIMATION, MessageMediaType.AUDIO, MessageMediaType.DOCUMENT, MessageMediaType.PHOTO, MessageMediaType.STICKER, MessageMediaType.VIDEO, MessageMediaType.VOICE]
+
+
+@TGBot.on_message(filters.private & (filters.command("create") | filters.media))
 async def control_handler(bot: Client, message: Message):
+    msg=None
     if message.reply_to_message:
-        msg = message.reply_to_message
+        if message.reply_to_message.text or message.reply_to_message.media in supported_media:
+            msg = await message.reply_to_message.copy(message.chat.id)
     else:
-        msg = await message.reply_text("Click On Edit Message Text to change this text")
+        if message.media in supported_media:
+            msg = await message.copy(message.chat.id)
+        else:
+            msg = await message.reply_text("Click On Edit Message Text to change this text\nIf you want buttons for media send/forward the media or reply to to the media with /create\nSupported media are\n```\nANIMATION\nAUDIO\nDOCUMENT\nPHOTO\nSTICKER\nVIDEO\nVOICE\n```")
+    if not msg:
+        return message.reply_text("Media Type does not support Inline Keyboard")
     await message.reply_text(
         "Controler\nButton Position will be showen here after adding buttons",
         quote=True,
@@ -23,8 +36,9 @@ async def control_handler(bot: Client, message: Message):
             [InlineKeyboardButton("↓", "ctrl_down")],
             [InlineKeyboardButton("Add Button Left", "ctrl_add_left"), InlineKeyboardButton("Add Button Right", "ctrl_add_right")],
             [InlineKeyboardButton("Add Button Above", "ctrl_add_above"), InlineKeyboardButton("Add Button Below", "ctrl_add_below")],
-            [InlineKeyboardButton("Edit Button Text", "ctrl_edit_text"), InlineKeyboardButton("Remove Button", "ctrl_delete"), InlineKeyboardButton("Edit Button URL", "ctrl_edit_url")],
-            [InlineKeyboardButton("Edit Message Text", "ctrl_edit_message"), InlineKeyboardButton("save", "ctrl_save")]
+            [InlineKeyboardButton("Edit Button Text", "ctrl_edit_text"), InlineKeyboardButton("Edit Button URL", "ctrl_edit_url")],
+            [InlineKeyboardButton("Edit Message Text", "ctrl_edit_message"), InlineKeyboardButton("save", "ctrl_save")],
+            [InlineKeyboardButton("Remove Button", "ctrl_delete"), InlineKeyboardButton(" ", " ")]
         ]))
 
 
@@ -32,7 +46,7 @@ async def control_handler(bot: Client, message: Message):
 async def ctrl_up_handler(bot: Client, update: CallbackQuery):
     markup=(await bot.get_messages(update.message.chat.id, update.message.reply_to_message_id)).reply_markup
     if not markup:
-        return await update.answer(text="Add a button by clicking on any 'Add Button' Button", show_alert=True)
+        return await update.answer(text="First create a button by clicking on any Button stating with 'Add Button'", show_alert=True)
 
     row_no, col_no=[int(x) for x in update.message.reply_markup.inline_keyboard[1][1].callback_data.split("_")]
     if row_no<1:
@@ -49,7 +63,7 @@ async def ctrl_up_handler(bot: Client, update: CallbackQuery):
 async def ctrl_left_handler(bot: Client, update: CallbackQuery):
     markup=(await bot.get_messages(update.message.chat.id, update.message.reply_to_message_id)).reply_markup
     if not markup:
-        return await update.answer(text="Add a button by clicking on any 'Add Button' Button", show_alert=True)
+        return await update.answer(text="First create a button by clicking on any Button stating with 'Add Button'", show_alert=True)
     row_no, col_no=[int(x) for x in update.message.reply_markup.inline_keyboard[1][1].callback_data.split("_")]
     if col_no<1:
         return await update.answer(text="already selected left most button")
@@ -62,7 +76,7 @@ async def ctrl_left_handler(bot: Client, update: CallbackQuery):
 async def ctrl_right_handler(bot: Client, update: CallbackQuery):
     markup=(await bot.get_messages(update.message.chat.id, update.message.reply_to_message_id)).reply_markup
     if not markup:
-        return await update.answer(text="Add a button by clicking on any 'Add Button' Button", show_alert=True)
+        return await update.answer(text="First create a button by clicking on any Button stating with 'Add Button'", show_alert=True)
     buttons=update.message.reply_markup.inline_keyboard
     row_no, col_no=[int(x) for x in buttons[1][1].callback_data.split("_")]
 
@@ -77,7 +91,7 @@ async def ctrl_right_handler(bot: Client, update: CallbackQuery):
 async def ctrl_down_handler(bot: Client, update: CallbackQuery):
     markup=(await bot.get_messages(update.message.chat.id, update.message.reply_to_message_id)).reply_markup
     if not markup:
-        return await update.answer(text="Add a button by clicking on any 'Add Button' Button", show_alert=True)
+        return await update.answer(text="First create a button by clicking on any Button stating with 'Add Button'", show_alert=True)
     buttons=update.message.reply_markup.inline_keyboard
     row_no, col_no=[int(x) for x in buttons[1][1].callback_data.split("_")]
 
@@ -187,7 +201,7 @@ async def ctrl_add_below_handler(bot: Client, update: CallbackQuery):
 async def ctrl_edit_text_handler(bot: Client, update: CallbackQuery):
     reply_msg=await bot.get_messages(update.message.chat.id, update.message.reply_to_message_id)
     if not reply_msg.reply_markup:
-        return await update.answer(text="Add a button by clicking on any 'Add Button' Button", show_alert=True)
+        return await update.answer(text="First create a button by clicking on any Button stating with 'Add Button'", show_alert=True)
     try:
         buttons=reply_msg.reply_markup.inline_keyboard
         row_no, col_no=[int(x) for x in update.message.reply_markup.inline_keyboard[1][1].callback_data.split("_")]
@@ -203,7 +217,7 @@ async def ctrl_edit_text_handler(bot: Client, update: CallbackQuery):
 async def ctrl_edit_url_handler(bot: Client, update: CallbackQuery):
     reply_msg=await bot.get_messages(update.message.chat.id, update.message.reply_to_message_id)
     if not reply_msg.reply_markup:
-        return await update.answer(text="Add a button by clicking on any 'Add Button' Button", show_alert=True)
+        return await update.answer(text="First create a button by clicking on any Button stating with 'Add Button'", show_alert=True)
     try:
         buttons=reply_msg.reply_markup.inline_keyboard
         row_no, col_no=[int(x) for x in update.message.reply_markup.inline_keyboard[1][1].callback_data.split("_")]
@@ -226,11 +240,10 @@ async def ctrl_edit_message_handler(bot: Client, update: CallbackQuery):
     except ListenerTimeout:
         return await update.message.reply("You took too long to answer\nDown't worry you wan prepare your message now and click on `Edit Button Text` when your ready")
     try:
-        msg2=await update.message.reply_text("Chose a parse mode\nMarkdown: Parse Text in Markdown Mode\nHTML: Parse Text in HTML Mode\nBoth: Parse Text in both HTML and Markdown Mode\nDisable: Dont Parse the Text\nWait Time: 1 Minute\nIf not chosen by default text will be parsed in both Markdown and HTML Mode",
+        msg2=await update.message.reply_text("Chose a parse mode\nMarkdown: Parse Text in Markdown Mode\nHTML: Parse Text in HTML Mode\nDefault: Parse Text in both HTML and Markdown Mode\nWait Time: 1 Minute\nIf not chosen by default text will be parsed in both Markdown and HTML Mode",
             reply_markup=ReplyKeyboardMarkup(
                 [
-                    [KeyboardButton("Markdown"), KeyboardButton("HTML")],
-                    [KeyboardButton("Both"), KeyboardButton("Disable")]
+                    [KeyboardButton("Default"), KeyboardButton("Markdown"), KeyboardButton("HTML")]
                 ]
                 )
             )
@@ -239,8 +252,6 @@ async def ctrl_edit_message_handler(bot: Client, update: CallbackQuery):
             parser=ParseMode.MARKDOWN
         elif parse_msg.text == "HTML":
             parser=ParseMode.HTML
-        elif parse_msg.text == "Disable":
-            parser=ParseMode.DISABLED
         else:
             parser=ParseMode.DEFAULT
     except ListenerTimeout:
@@ -248,21 +259,40 @@ async def ctrl_edit_message_handler(bot: Client, update: CallbackQuery):
     try:
         if reply_msg.text:
             await reply_msg.edit_text(text.text, parse_mode=parser, reply_markup=reply_msg.reply_markup)
-        elif reply_msg.caption:
+        elif reply_msg.media:
             await reply_msg.edit_caption(text.text, reply_markup=reply_msg.reply_markup)
     except MessageNotModified:
         pass
     await bot.delete_messages(update.message.chat.id, [msg.id, text.id, msg2.id, parse_msg.id])
 
-@TGBot.on_callback_query(filters.regex(pattern="ctrl_save"))
+@TGBot.on_callback_query(filters.regex(pattern="ctrl_save.*"))
 async def ctrl_save_handler(bot: Client, update: CallbackQuery):
-    await update.answer("Inline Mode Not Implimented yet\nYou can use this button after Inline mode support is added")
+    markup=await bot.get_messages(update.message.chat.id, update.message.reply_to_message_id)
+    if not markup.reply_markup:
+        return await update.answer(text="First create a button by clicking on any Button stating with 'Add Button'", show_alert=True)
+    usr_cmd=update.data.split("_")
+    if len(usr_cmd)<3:
+        id=None
+        msg_id=(await markup.copy(Var.BIN_CHANNEL)).id
+    else:
+        msg_id=(await db.get_button(usr_cmd[2])).get("msg_id")
+
+    if len(usr_cmd)<3:
+        id = await db.save_button(id, update.from_user.id, msg_id)
+        update.message.reply_markup.inline_keyboard[7][1]=InlineKeyboardButton("Share", switch_inline_query=str(msg_id))
+        update.message.reply_markup.inline_keyboard[6][1].callback_data=f"ctrl_save_{str(id)}"
+        await update.edit_message_reply_markup(InlineKeyboardMarkup(update.message.reply_markup.inline_keyboard))
+        await update.answer("Saved Buttons")
+        await update.message.reply_text("You can share use Share Button to share this buttons with others")
+    else:
+        await bot.edit_message_reply_markup(Var.BIN_CHANNEL, msg_id, markup.reply_markup)
+        await update.answer("Edited Button")
 
 @TGBot.on_callback_query(filters.regex(pattern="ctrl_delete"))
 async def ctrl_delete_handler(bot: Client, update: CallbackQuery):
     markup=(await bot.get_messages(update.message.chat.id, update.message.reply_to_message_id)).reply_markup
     if not markup:
-        return await update.answer(text="Add a button by clicking on any 'Add Button' Button", show_alert=True)
+        return await update.answer(text="First create a button by clicking on any Button stating with 'Add Button'", show_alert=True)
 
     row_no, col_no=[int(x) for x in update.message.reply_markup.inline_keyboard[1][1].callback_data.split("_")]
     markup.inline_keyboard[row_no].pop(col_no)
@@ -298,3 +328,8 @@ def gen_pos_text(row: int, col: int, row_len: int):
             row_text[col]="🟥"
         interface.append(" ".join(row_text))
     return "\n".join(interface)
+
+
+@TGBot.on_message(group=6)
+async def check_user(bot, message):
+    await db.add_user(message.from_user.id)
