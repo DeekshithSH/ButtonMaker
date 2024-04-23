@@ -303,10 +303,14 @@ async def ctrl_delete_handler(bot: Client, update: CallbackQuery):
             row_no=len(markup.inline_keyboard)-1
     if len(markup.inline_keyboard[row_no])<=col_no:
         col_no=len(markup.inline_keyboard)-1
-    update.message.reply_markup.inline_keyboard[1][1].callback_data=f"{row_no-1}_{col_no}"
-    update.message.reply_markup.inline_keyboard[1][1].text=markup.inline_keyboard[row_no-1][col_no].text
-    await update.edit_message_text(gen_pos_text(row_no-1, col_no, len(markup.inline_keyboard)),
+    update.message.reply_markup.inline_keyboard[1][1].callback_data=f"{row_no}_{col_no}"
+    update.message.reply_markup.inline_keyboard[1][1].text=markup.inline_keyboard[row_no][col_no].text
+    await update.message.reply_to_message.edit_reply_markup(InlineKeyboardMarkup(markup.inline_keyboard))
+    try:
+        await update.edit_message_text(gen_pos_text(row_no, col_no, len(markup.inline_keyboard)),
         reply_markup=InlineKeyboardMarkup(update.message.reply_markup.inline_keyboard))
+    except MessageNotModified:
+        pass
 
 @TGBot.on_callback_query(filters.regex(pattern="\d+_\d+"))
 async def info_message_handler(bot: Client, update: CallbackQuery):
