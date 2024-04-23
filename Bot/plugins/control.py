@@ -310,7 +310,7 @@ async def ctrl_delete_handler(bot: Client, update: CallbackQuery):
 
 @TGBot.on_callback_query(filters.regex(pattern="\d+_\d+"))
 async def info_message_handler(bot: Client, update: CallbackQuery):
-    print(update.message.reply_markup.inline_keyboard[1][1])
+    await update.answer(update.message.reply_markup.inline_keyboard[1][1].callback_data)
 
 async def ask_button_data(message: Message) -> Union[str, str]:
     msg1=(await message.reply_text("Send the name that will appear on the button\nWait Time: 2 minute")).id
